@@ -1,3 +1,5 @@
+import {Course} from "./components/Course.jsx";
+
 const App = () => {
     const course = {
         id: 1,
