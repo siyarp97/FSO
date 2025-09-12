@@ -1,64 +1,101 @@
-import {useState, useEffect} from 'react'
-import {PersonInfo} from "./components/PersonInfo.jsx";
-import {FormComponent} from "./components/FormComponent.jsx";
-import {FilterComponent} from "./components/FilterComponent.jsx";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { PersonInfo } from "./components/PersonInfo.jsx";
+import { FormComponent } from "./components/FormComponent.jsx";
+import { FilterComponent } from "./components/FilterComponent.jsx";
+import service from "./services/service.js";
 
-const App = () => {
-    const [persons, setPersons] = useState([])
-    const [newName, setNewName] = useState('')
-    const [number, setNumber] = useState('')
-    const [filterPerson, setFilterPerson] = useState('')
+export default function App() {
+    const [persons, setPersons] = useState([]);
+    const [newName, setNewName] = useState("");
+    const [number, setNumber] = useState("");
+    const [filterPerson, setFilterPerson] = useState("");
+    const [deletingId, setDeletingId] = useState(null);
 
     useEffect(() => {
-        axios
-            .get("http://localhost:3001/persons\n")
-            .then(res => setPersons(res.data))
+        service.getAll().then((res) => setPersons(res?.data ?? res)).catch(console.error);
     }, []);
 
-    function AddNewPerson(e) {
-        e.preventDefault()
-        setNewName(prev => e.target.value)
+    function handleNameChange(e) {
+        setNewName(e.target.value);
     }
 
-    function AddNumber(e) {
-        e.preventDefault()
-        setNumber(prev => e.target.value)
+    function handleNumberChange(e) {
+        setNumber(e.target.value);
     }
 
-    function AddPerson(e) {
-        e.preventDefault()
-        if (persons.some(person => person.name === newName)) {
-            return alert(`${newName} is already added!`)
-        } else {
-            return setPersons(prev => [...prev, {name: newName, number: number}])
+    function handleFilterChange(e) {
+        setFilterPerson(e.target.value);
+    }
+
+    async function handleAddPerson(e) {
+        e.preventDefault();
+        const exists = persons.some(
+            (p) => p.name.trim().toLowerCase() === newName.trim().toLowerCase()
+        );
+        if (exists) {
+            if(confirm(`${newName} has already added. Would you like to replace it with new number?`)){
+                const updatePerson = {name: newName.trim(), number:number.trim()}
+                const person = persons.filter(p => p.name.trim().toLowerCase() === newName.trim().toLowerCase())
+                console.log(person.id)
+                await service.update(person[0].id, updatePerson)
+                setPersons((prev) =>
+                    prev.map((p) => (p.id === person[0].id ? { ...p, ...updatePerson } : p))
+                );
+            }
+            return;
+        }
+
+        try {
+            const payload = { name: newName.trim(), number: number.trim() };
+            const created = await service.create(payload);
+            const createdPerson = created?.data ?? created;
+            setPersons((prev) => [...prev, createdPerson]);
+            setNewName("");
+            setNumber("");
+        } catch (err) {
+            console.error(err);
+            alert("Kayıt sırasında bir hata oluştu.");
         }
     }
 
-    function filterPersonFunc(e) {
-        e.preventDefault()
-        setFilterPerson(prev => e.target.value)
+    async function handleDelete(id) {
+        if (!confirm("Bu kişiyi silmek istediğine emin misin?")) return;
+        try {
+            setDeletingId(id);
+            await service.deleteItem(id);
+            setPersons((prev) => prev.filter((p) => p.id !== id));
+        } catch (err) {
+            console.error(err);
+            alert("Silme sırasında bir hata oluştu.");
+        } finally {
+            setDeletingId(null);
+        }
     }
-
 
     return (
         <div>
             <h2>Phonebook</h2>
-            <FilterComponent filterPerson={filterPerson} filterPersonFunc={filterPersonFunc} />
+
+            <FilterComponent
+                filterPerson={filterPerson}
+                filterPersonFunc={handleFilterChange}
+            />
+
             <FormComponent
                 number={number}
-                AddNumber={AddNumber}
-                AddNewPerson={AddNewPerson}
-                AddPerson={AddPerson}
+                AddNumber={handleNumberChange}
+                AddNewPerson={handleNameChange}
+                AddPerson={handleAddPerson}
                 newName={newName}
             />
 
             <h2>Numbers</h2>
-
-            <PersonInfo filterPerson={filterPerson} persons={persons}/>
-
+            <PersonInfo
+                persons={persons}
+                filterPerson={filterPerson}
+                onDelete={handleDelete}
+                deletingId={deletingId}
+            />
         </div>
-    )
+    );
 }
-
-export default App

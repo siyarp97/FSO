@@ -1,7 +1,25 @@
-export const PersonInfo = ({persons, filterPerson}) => {
-    if(filterPerson){
-        const displayed = persons.filter(person => person.name.toLowerCase().includes(filterPerson.toLowerCase()))
-        return displayed.map(item => <p>{item.name} {item.number}</p>)
-    }
-    return persons.map(person => <p>{person.name} {person.number}</p>)
-}
+export const PersonInfo = ({ persons, filterPerson, onDelete, deletingId }) => {
+    const list = filterPerson
+        ? persons.filter((p) =>
+            p.name.toLowerCase().includes(filterPerson.toLowerCase())
+        )
+        : persons;
+
+    return (
+        <>
+            {list.map((person) => (
+                <div key={person.id}>
+                    <p>
+                        {person.name} {person.number}
+                    </p>
+                    <button
+                        onClick={() => onDelete(person.id)}
+                        disabled={deletingId === person.id}
+                    >
+                        {deletingId === person.id ? "Deleting..." : "Delete"}
+                    </button>
+                </div>
+            ))}
+        </>
+    );
+};

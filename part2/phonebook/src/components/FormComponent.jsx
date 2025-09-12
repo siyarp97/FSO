@@ -1,3 +1,5 @@
+import service from "../services/service.js";
+
 export const FormComponent = ({AddPerson, newName, AddNewPerson, number, AddNumber}) => {
     return (
         <form onSubmit={AddPerson}>
