@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import {use, useEffect, useState} from "react";
 import { PersonInfo } from "./components/PersonInfo.jsx";
 import { FormComponent } from "./components/FormComponent.jsx";
 import { FilterComponent } from "./components/FilterComponent.jsx";
 import service from "./services/service.js";
+import {ErrorMessage} from "./components/ErrorMessage.jsx";
 
 export default function App() {
     const [persons, setPersons] = useState([]);
@@ -10,6 +11,9 @@ export default function App() {
     const [number, setNumber] = useState("");
     const [filterPerson, setFilterPerson] = useState("");
     const [deletingId, setDeletingId] = useState(null);
+    const [showError, setShowError] = useState(false)
+    const [deltedErr, setDeletedErr] = useState(false)
+    const [errorText, setErrorText] = useState('')
 
     useEffect(() => {
         service.getAll().then((res) => setPersons(res?.data ?? res)).catch(console.error);
@@ -42,6 +46,9 @@ export default function App() {
                     prev.map((p) => (p.id === person[0].id ? { ...p, ...updatePerson } : p))
                 );
             }
+            setErrorText(`${newName} number changed`)
+            setDeletedErr(false)
+            setShowError(true)
             return;
         }
 
@@ -49,6 +56,9 @@ export default function App() {
             const payload = { name: newName.trim(), number: number.trim() };
             const created = await service.create(payload);
             const createdPerson = created?.data ?? created;
+            setErrorText(`${newName} added`)
+            setDeletedErr(false)
+            setShowError(true)
             setPersons((prev) => [...prev, createdPerson]);
             setNewName("");
             setNumber("");
@@ -66,7 +76,11 @@ export default function App() {
             setPersons((prev) => prev.filter((p) => p.id !== id));
         } catch (err) {
             console.error(err);
-            alert("Silme sırasında bir hata oluştu.");
+            const name = persons.find(p => p.id === id)
+            setShowError(true)
+            setDeletedErr(true)
+            setErrorText(`${name.name} has already deleted.`)
+            console.log(persons)
         } finally {
             setDeletingId(null);
         }
@@ -74,6 +88,9 @@ export default function App() {
 
     return (
         <div>
+            {showError &&
+                <ErrorMessage text={errorText} deleted={!!deltedErr}/>
+            }
             <h2>Phonebook</h2>
 
             <FilterComponent
