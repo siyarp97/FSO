@@ -4,7 +4,7 @@
     "morgan": "^1.10.1"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node part3/phonebook/index.js",
+    "dev": "nodemon part3/phonebook/index.js"
   }
 }
